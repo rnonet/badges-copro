@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Déclaration des badges d'accès</title>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <span id="logo"></span>
+    <div class="site-title">
+      <h1>Déclaration des badges d'accès</h1>
+      <p id="residence-name">Vincennes</p>
+    </div>
+    <a href="#modifier" class="header-link" id="link-access"><span class="lbl-long">Modifier une déclaration</span><span class="lbl-short">Modifier</span></a>
+  </div>
+</header>
+
+<main>
+  <!-- ===================== Formulaire ===================== -->
+  <section id="view-form" hidden>
+    <p class="lede" id="form-lede">Le conseil syndical met à jour les centrales d'accès de l'immeuble. Déclarez chaque badge que vous utilisez : sans déclaration, il risque de ne plus ouvrir les portes.</p>
+    <div class="alert alert-info" id="editing-banner" hidden></div>
+    <div class="alert alert-error" id="form-error" role="alert" hidden></div>
+
+    <form id="decl-form" novalidate>
+      <div class="card">
+        <div class="card-head"><span class="step-num">1</span><h2>Qui êtes-vous ?<span class="sub">Un seul des trois champs suffit.</span></h2></div>
+        <div class="field" id="f-identity" style="margin:0"></div>
+        <div class="grid-3">
+          <div class="field" id="f-lot">
+            <label for="in-lot">N° de lot</label>
+            <input id="in-lot" name="lot" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" list="lots-list" placeholder="ex. 0102">
+            <datalist id="lots-list"></datalist>
+          </div>
+          <div class="field" id="f-nom">
+            <label for="in-nom">Nom</label>
+            <input id="in-nom" name="nom" type="text" autocomplete="family-name" maxlength="80">
+          </div>
+          <div class="field" id="f-id_syndic">
+            <label for="in-syndic">Identifiant syndic</label>
+            <input id="in-syndic" name="id_syndic" type="text" class="mono" autocapitalize="characters" autocomplete="off" maxlength="10" placeholder="C543210">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="step-num">2</span><h2>Vos badges<span class="sub">Ajoutez-en autant que nécessaire, y compris ceux de vos locataires.</span></h2></div>
+        <div class="central-box" id="central-box" hidden>
+          <div class="field" id="f-central" style="margin:0">
+            <h3 class="central-title">Badges déjà connus à votre nom</h3>
+            <p class="central-intro" id="central-intro"></p>
+            <div class="central-list" id="central-list" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="field" id="f-badges" style="margin:0">
+          <div class="badge-list" id="badge-list"></div>
+          <div class="empty" id="badge-empty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="3"/><circle cx="12" cy="9" r="3"/><path d="M8 16h8M9 19h6"/></svg>
+            Aucun badge pour l'instant.
+          </div>
+          <button type="button" class="btn btn-add" id="btn-add">+ Ajouter un badge</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="step-num">3</span><h2>Envoi</h2></div>
+        <div class="field" id="f-email">
+          <label for="in-email">Votre email <span class="opt">(facultatif)</span></label>
+          <input id="in-email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="160">
+          <p class="hint">Permet de revenir modifier votre déclaration grâce à un code envoyé par email. Sans email, seul le conseil syndical pourra la modifier.</p>
+        </div>
+        <div class="field" id="f-consent">
+          <label class="check"><input type="checkbox" name="consent" id="in-consent"> J'ai lu la notice ci-dessous et j'accepte que ces informations soient utilisées pour programmer les accès de l'immeuble.</label>
+          <details class="notice">
+            <summary>Notice d'information (données personnelles)</summary>
+            <dl>
+              <dt>Responsable</dt><dd>Le conseil syndical de la copropriété — <a id="contact-link" href="#"></a></dd>
+              <dt>Finalité</dt><dd>Mise à jour de la programmation des centrales d'accès de l'immeuble.</dd>
+              <dt>Données</dt><dd>Lot, nom, identifiant syndic, email, numéros de badge, escaliers, type d'occupant, coordonnées facultatives du locataire.</dd>
+              <dt>Destinataires</dt><dd>Conseil syndical et gardien ; l'installateur des centrales reçoit uniquement les numéros de badge et les escaliers.</dd>
+              <dt>Conservation</dt><dd>En ligne le temps de la mise à jour des centrales, puis suppression de cette base. L'export est ensuite conservé par le gardien pour la gestion courante des badges.</dd>
+              <dt>Photo du badge</dt><dd>Si vous photographiez un badge, l'image est analysée par un service d'intelligence artificielle (Anthropic, États-Unis) uniquement pour lire le numéro, puis effacée. Elle n'est jamais conservée.</dd>
+              <dt>Locataires</dt><dd>Si vous indiquez les coordonnées de votre locataire, merci de l'en informer.</dd>
+              <dt>Vos droits</dt><dd>Accès, rectification, suppression : écrivez au conseil syndical à l'adresse ci-dessus.</dd>
+            </dl>
+          </details>
+        </div>
+        <div class="hp" aria-hidden="true"><label>Ne pas remplir <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+        <button type="submit" class="btn btn-primary btn-block" id="btn-submit">Envoyer ma déclaration</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ===================== Confirmation ===================== -->
+  <section id="view-done" hidden>
+    <div class="card">
+      <div class="done-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+      <h2 id="done-title">Merci, votre déclaration est enregistrée</h2>
+      <ul class="recap" id="done-recap"></ul>
+      <p id="done-msg" class="muted"></p>
+      <div class="actions">
+        <button type="button" class="btn btn-secondary" id="btn-new">Déclarer pour un autre lot</button>
+        <a href="#modifier" class="btn btn-ghost" id="btn-done-mine" hidden>Voir mes déclarations</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== Accès par code ===================== -->
+  <section id="view-access" hidden>
+    <div class="card" style="max-width:480px;margin:0 auto">
+      <div class="card-head"><h2>Modifier une déclaration</h2></div>
+      <div class="alert alert-error" id="access-error" role="alert" hidden></div>
+      <div class="alert alert-success" id="access-info" role="status" hidden></div>
+      <form id="form-email" novalidate>
+        <div class="field" id="f-access-email">
+          <label for="in-access-email">Email utilisé lors de la déclaration</label>
+          <input id="in-access-email" type="email" inputmode="email" autocomplete="email" required>
+          <p class="hint">Vous recevrez un code à 6 chiffres, valable 15 minutes.</p>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="btn-send-code">Recevoir un code</button>
+      </form>
+      <form id="form-code" novalidate hidden>
+        <div class="field" id="f-code">
+          <label for="in-code">Code reçu par email</label>
+          <input id="in-code" class="code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Valider</button>
+        <div class="actions" style="margin-top:10px;justify-content:space-between">
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-change-email">Changer d'email</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-resend">Renvoyer un code</button>
+        </div>
+      </form>
+      <p style="margin:18px 0 0"><a href="#" id="back-to-form">← Revenir à la déclaration</a></p>
+    </div>
+  </section>
+
+  <!-- ===================== Mes déclarations ===================== -->
+  <section id="view-mine" hidden>
+    <div class="card">
+      <div class="card-head"><h2>Mes déclarations<span class="sub" id="mine-email"></span></h2></div>
+      <div id="mine-list"></div>
+      <div class="actions">
+        <button type="button" class="btn btn-secondary" id="btn-mine-new">+ Nouvelle déclaration</button>
+        <button type="button" class="btn btn-ghost" id="btn-logout">Se déconnecter</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">Page gérée par le conseil syndical · <a id="footer-contact" href="#"></a></footer>
+
+<script>window.API_URL = 'api.php';</script>
+<script src="assets/shared.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
