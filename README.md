@@ -1,4 +1,3 @@
-# badges-copro
 # Déclaration des badges d'accès
 
 Petite application web pour que les résidents déclarent leurs badges d'accès (escaliers A, B, C), avec lecture automatique du numéro sur photo, accès ultérieur par code email et page d'administration avec export CSV.
@@ -15,16 +14,20 @@ PHP 8.1+ et SQLite, sans framework ni étape de compilation.
 ## Installation
 
 1. **Déposer les fichiers** sur l'hébergement (FTP). Idéalement, faire pointer la racine du site (ou du sous-domaine, ex. `badges.votre-domaine.fr`) sur le dossier **`public/`**.
-   Si ce n'est pas possible, déposez tout à la racine : le fichier `.htaccess` fourni redirige vers `public/` et bloque `src/`, `data/`, `bin/` et `config.php`.
+   Si ce n'est pas possible, déposez tout à la racine : le `.htaccess` fourni redirige vers `public/` et bloque `src/`, `data/`, `bin/`, `demo/` et `config.php`. Si la réécriture d'URL n'est pas active chez l'hébergeur, le fichier `index.php` de la racine prend le relais et renvoie le visiteur vers `public/` (et `/admin` vers `public/admin/`), y compris quand l'application est installée dans un sous-dossier (ex. `votre-domaine.fr/badges/`). Sur un serveur **Nginx**, les `.htaccess` sont ignorés : faites impérativement pointer la racine du site sur `public/`, sinon `data/` (la base) resterait accessible.
 2. **Créer la configuration** : copier `config.sample.php` en `config.php`, puis remplir :
    - `residence_name`, `contact_email` ;
    - `admin_password_hash` : en ligne de commande, `php bin/hash-password.php "un mot de passe solide"` et coller le résultat. Sans accès SSH, exécutez la commande sur votre ordinateur ;
    - le bloc `smtp` (identifiants de la boîte email). Chez OVH : `ssl0.ovh.net`, port 465, `ssl` ;
    - `anthropic_api_key` si vous voulez la lecture photo par Claude.
-3. **Droits d'écriture** : le dossier `data/` doit être accessible en écriture par PHP (la base `badges.sqlite` y est créée au premier accès).
-4. Ouvrir `https://votre-site/admin/`, se connecter, puis **importer la liste des lots** (bouton « Liste des lots »).
-5. Faire un essai complet : déclaration, demande de code sur votre propre email, modification, export CSV.
-6. Diffuser le lien de la page aux résidents (affichage dans le hall avec QR code, email du syndic…).
+3. **Base de données** : par défaut SQLite (un fichier dans `data/`, rien à créer). Pour utiliser **MySQL / MariaDB** (ex. base OVH) :
+   - créez la base chez l'hébergeur, puis exécutez `bin/schema-mysql.sql` dans l'onglet SQL de phpMyAdmin (ou `mysql -u UTILISATEUR -p NOM_BASE < bin/schema-mysql.sql`) ;
+   - dans `config.php` : `'db_driver' => 'mysql'` et le bloc `mysql` (hôte, nom de la base, utilisateur, mot de passe). Chez OVH, l'hôte ressemble à `xxxxx.mysql.db`.
+   - Si l'utilisateur MySQL a le droit de créer des tables, l'application les crée aussi toute seule au premier accès.
+4. **Droits d'écriture** : le dossier `data/` doit être accessible en écriture par PHP, même avec MySQL (clé secrète de l'application ; avec SQLite, la base `badges.sqlite` y est créée au premier accès). Les tables sont créées automatiquement ; pour les créer à la main : `sqlite3 data/badges.sqlite < bin/schema.sql`.
+5. Ouvrir `https://votre-site/admin/`, se connecter, puis **importer la liste des lots** (onglet « Lots », bouton « Mettre à jour (import) »).
+6. Faire un essai complet : déclaration, demande de code sur votre propre email, modification, export CSV.
+7. Diffuser le lien de la page aux résidents (affichage dans le hall avec QR code, email du syndic…).
 
 ## Utilisation
 
@@ -107,12 +110,13 @@ Les emails sont alors écrits dans `data/mail.log` au lieu d'être envoyés.
 
 ```
 public/            racine web
-  index.html       page résident
-  admin/           page d'administration
+  index.php        page résident (HTML préparé par PHP)
+  admin/index.php  page d'administration
   api.php          API JSON (toutes les actions)
   assets/          CSS et JavaScript
-src/               code PHP (base, validation, email, lecture photo)
+src/               code PHP (base, validation, email, lecture photo ; page.php : préparation des pages)
 data/              base SQLite (non accessible depuis le web)
-bin/               outil de hachage du mot de passe
+bin/               outil de hachage du mot de passe, schémas SQL (schema.sql pour SQLite, schema-mysql.sql pour MySQL)
 config.sample.php  modèle de configuration
+index.php          redirection vers public/ (si la racine du site ne pointe pas sur public/)
 ```

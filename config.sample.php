@@ -13,8 +13,24 @@ return [
     // Mot de passe administrateur : hash généré avec  php bin/hash-password.php
     'admin_password_hash' => '',
 
-    // Fichier SQLite (le dossier doit être accessible en écriture par PHP)
+    // ---------- Base de données ----------
+    // 'sqlite' : un simple fichier dans data/ (rien à créer chez l'hébergeur)
+    // 'mysql'  : base MySQL / MariaDB de l'hébergeur (tables : bin/schema-mysql.sql)
+    'db_driver' => 'sqlite',
+
+    // SQLite : chemin du fichier (le dossier doit être accessible en écriture par PHP).
+    // Le dossier data/ sert aussi, quel que soit le moteur, à la clé secrète et au journal d'emails de test.
     'db_path' => __DIR__ . '/data/badges.sqlite',
+
+    // MySQL / MariaDB : informations fournies par l'hébergeur
+    // (OVH : espace client > Hébergements > Bases de données ; l'hôte ressemble à xxxxx.mysql.db)
+    'mysql' => [
+        'host'     => 'localhost',
+        'port'     => 3306,
+        'database' => '',
+        'username' => '',
+        'password' => '',
+    ],
 
     // Format de l'identifiant syndic (expression régulière, insensible à la casse)
     'syndic_id_pattern' => '/^[A-Z][0-9]{6}$/i',

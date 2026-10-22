@@ -92,21 +92,7 @@ try {
         /* ------------------------------------------------------------ Public */
 
         case 'session':
-            $lots = db()->query('SELECT numero, libelle FROM lots ORDER BY CAST(numero AS INTEGER)')->fetchAll();
-            out([
-                'ok' => true,
-                'csrf' => $_SESSION['csrf'],
-                'residence' => config('residence_name'),
-                'contact' => config('contact_email'),
-                'lots' => $lots,
-                'strict_lots' => (bool) config('strict_lots'),
-                'ocr' => Ocr::enabled() ? 'server' : 'local',
-                'serial_min' => (int) config('serial_min_length'),
-                'serial_max' => (int) config('serial_max_length'),
-                'resident_email' => resident_email(),
-                'admin' => !empty($_SESSION['admin']),
-                'central' => central_loaded(),
-            ]);
+            out(session_payload());
 
         case 'suggest_badges':
             // Badges de l'ancienne centrale qui semblent appartenir au résident : numéros masqués
@@ -490,7 +476,9 @@ try {
             $pdo->exec('DELETE FROM badges');
             $pdo->exec('DELETE FROM declarations');
             $pdo->exec('DELETE FROM auth_codes');
-            $pdo->exec('VACUUM');
+            if (db_driver() === 'sqlite') {
+                $pdo->exec('VACUUM'); // récupère la place libérée dans le fichier
+            }
             out(['ok' => true]);
 
         case 'admin_export':

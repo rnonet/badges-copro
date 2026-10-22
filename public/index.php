@@ -1,10 +1,15 @@
+<?php
+declare(strict_types=1);
+require __DIR__ . '/../src/page.php';
+$p = page_context();
+?>
 <!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Déclaration des badges d'accès</title>
+<title>Badges — <?= e($p['residence']) ?></title>
 <link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
@@ -13,7 +18,7 @@
     <span id="logo"></span>
     <div class="site-title">
       <h1>Déclaration des badges d'accès</h1>
-      <p id="residence-name">Vincennes</p>
+      <p id="residence-name"><?= e($p['residence']) ?></p>
     </div>
     <a href="#modifier" class="header-link" id="link-access"><span class="lbl-long">Modifier une déclaration</span><span class="lbl-short">Modifier</span></a>
   </div>
@@ -34,7 +39,7 @@
           <div class="field" id="f-lot">
             <label for="in-lot">N° de lot</label>
             <input id="in-lot" name="lot" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" list="lots-list" placeholder="ex. 0102">
-            <datalist id="lots-list"></datalist>
+            <datalist id="lots-list"><?php foreach ($p['lots'] as $l): ?><option value="<?= e(str_pad((string) $l['numero'], 4, '0', STR_PAD_LEFT)) ?>"><?= e($l['libelle'] ?? '') ?></option><?php endforeach; ?></datalist>
           </div>
           <div class="field" id="f-nom">
             <label for="in-nom">Nom</label>
@@ -78,7 +83,7 @@
           <details class="notice">
             <summary>Notice d'information (données personnelles)</summary>
             <dl>
-              <dt>Responsable</dt><dd>Le conseil syndical de la copropriété — <a id="contact-link" href="#"></a></dd>
+              <dt>Responsable</dt><dd>Le conseil syndical de la copropriété — <a id="contact-link" href="mailto:<?= e($p['contact']) ?>"><?= e($p['contact']) ?></a></dd>
               <dt>Finalité</dt><dd>Mise à jour de la programmation des centrales d'accès de l'immeuble.</dd>
               <dt>Données</dt><dd>Lot, nom, identifiant syndic, email, numéros de badge, escaliers, type d'occupant, coordonnées facultatives du locataire.</dd>
               <dt>Destinataires</dt><dd>Conseil syndical et gardien ; l'installateur des centrales reçoit uniquement les numéros de badge et les escaliers.</dd>
@@ -151,9 +156,10 @@
   </section>
 </main>
 
-<footer class="site-footer">Page gérée par le conseil syndical · <a id="footer-contact" href="#"></a></footer>
+<footer class="site-footer">Page gérée par le conseil syndical · <a id="footer-contact" href="mailto:<?= e($p['contact']) ?>"><?= e($p['contact']) ?></a></footer>
 
 <script>window.API_URL = 'api.php';</script>
+<?= boot_script($p['boot']) ?>
 <script src="assets/shared.js"></script>
 <script src="assets/app.js"></script>
 </body>

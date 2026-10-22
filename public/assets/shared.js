@@ -22,6 +22,13 @@
   };
 
   App.loadSession = async function () {
+    // Premier chargement : données préparées par la page PHP (évite un appel à l'API)
+    if (window.APP_BOOT && !App._booted) {
+      App._booted = true;
+      const b = Object.assign({ ok: true }, window.APP_BOOT);
+      App.csrf = b.csrf; App.conf = b;
+      return b;
+    }
     const r = await App.api('session');
     if (r.ok) { App.csrf = r.csrf; App.conf = r; }
     return r;

@@ -1,5 +1,5 @@
 """Construit la démo autonome (artifact) à partir des fichiers de l'application."""
-import re, pathlib
+import os, re, pathlib, subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "demo" / "out"
@@ -25,8 +25,13 @@ shared = (ROOT / "public/assets/shared.js").read_text()
 mock = (ROOT / "demo/mock.js").read_text()
 mock = mock.replace("/*DEMO_GROUPS*/[]", (ROOT / "demo/lots-demo.json").read_text())
 
+def render(php_file):
+    """Exécute la page PHP sans base ni session (BADGES_STATIC=1) et renvoie le HTML produit."""
+    env = dict(os.environ, BADGES_STATIC="1")
+    return subprocess.run(["php", str(php_file)], env=env, check=True, capture_output=True, text=True).stdout
+
 def page(src, app_js, bar_html, full_doc):
-    html = src.read_text()
+    html = render(src)
     title = re.search(r"<title>(.*?)</title>", html).group(1)
     body = re.search(r"<body[^>]*>(.*)</body>", html, re.S).group(1)
     body_class = (re.search(r'<body class="([^"]*)"', html) or [None, ""])[1]
@@ -50,6 +55,6 @@ bar_adm = ('<div class="demo-bar"><div class="inner"><span><strong>Démo</strong
            'Données fictives, gardées dans votre navigateur.</span>'
            '<a href="./" onclick="if(history.length>1){history.back();return false}">← Page résident</a>' + reset + '</div></div>')
 
-(OUT / "badges-demo.html").write_text(page(ROOT / "public/index.html", (ROOT / "public/assets/app.js").read_text(), bar_res, False))
-(OUT / "admin.html").write_text(page(ROOT / "public/admin/index.html", (ROOT / "public/assets/admin.js").read_text(), bar_adm, True))
+(OUT / "badges-demo.html").write_text(re.sub(r"<title>.*?</title>", "<title>Déclaration des badges d'accès</title>", page(ROOT / "public/index.php", (ROOT / "public/assets/app.js").read_text(), bar_res, False), count=1))  # titre stable de la démo
+(OUT / "admin.html").write_text(page(ROOT / "public/admin/index.php", (ROOT / "public/assets/admin.js").read_text(), bar_adm, True))
 print("ok", [p.name for p in OUT.iterdir()])

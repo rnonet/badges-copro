@@ -1,10 +1,15 @@
+<?php
+declare(strict_types=1);
+require __DIR__ . '/../../src/page.php';
+$p = page_context();
+?>
 <!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Administration — badges</title>
+<title>Administration — <?= e($p['residence']) ?></title>
 <link rel="stylesheet" href="../assets/app.css">
 </head>
 <body class="admin">
@@ -13,7 +18,7 @@
     <span id="logo"></span>
     <div class="site-title">
       <h1>Badges d'accès — administration</h1>
-      <p id="residence-name">Vincennes</p>
+      <p id="residence-name"><?= e($p['residence']) ?></p>
     </div>
     <button type="button" class="btn btn-ghost btn-sm" id="btn-logout" hidden>Déconnexion</button>
   </div>
@@ -328,6 +333,7 @@
 </dialog>
 
 <script>window.API_URL = '../api.php';</script>
+<?= boot_script($p['boot']) ?>
 <script src="../assets/shared.js"></script>
 <script src="../assets/admin.js"></script>
 </body>

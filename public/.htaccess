@@ -6,7 +6,7 @@ Options -Indexes
   Header always set X-Frame-Options "DENY"
   Header always set Permissions-Policy "camera=(self), geolocation=(), microphone=()"
 </IfModule>
-DirectoryIndex index.html
+DirectoryIndex index.php index.html
 # Forcer HTTPS
 <IfModule mod_rewrite.c>
   RewriteEngine On

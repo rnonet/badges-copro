@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 const APP_ROOT = __DIR__ . '/..';
 
+date_default_timezone_set('Europe/Paris'); // dates des exports et des emails à l'heure de Paris
+
 function config(?string $key = null)
 {
     static $cfg = null;
@@ -36,10 +38,35 @@ function start_session(): void
     }
 }
 
+/** 'sqlite' (par défaut, un fichier dans data/) ou 'mysql' (MySQL / MariaDB) */
+function db_driver(): string
+{
+    return config('db_driver') === 'mysql' ? 'mysql' : 'sqlite';
+}
+
+/** Tri numérique d'une colonne texte (« 0102 » après « 99 ») selon le moteur */
+function sql_int(string $col): string
+{
+    return db_driver() === 'mysql' ? "CAST($col AS UNSIGNED)" : "CAST($col AS INTEGER)";
+}
+
 function db(): PDO
 {
     static $pdo = null;
     if ($pdo) {
+        return $pdo;
+    }
+    if (db_driver() === 'mysql') {
+        $c = (array) config('mysql');
+        $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $c['host'] ?? 'localhost', (int) ($c['port'] ?? 3306), $c['database'] ?? '');
+        $pdo = new PDO($dsn, $c['username'] ?? '', $c['password'] ?? '', [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false, // entiers renvoyés en entiers
+            PDO::ATTR_STRINGIFY_FETCHES  => false,
+        ]);
+        $pdo->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci, time_zone = '+00:00', sql_mode = CONCAT(@@sql_mode, ',STRICT_TRANS_TABLES')");
+        migrate_mysql($pdo);
         return $pdo;
     }
     $path = config('db_path');
@@ -56,6 +83,56 @@ function db(): PDO
     $pdo->exec('PRAGMA busy_timeout = 5000');
     migrate($pdo);
     return $pdo;
+}
+
+/** MySQL : crée les tables manquantes à partir de bin/schema-mysql.sql (si l'utilisateur a le droit CREATE) */
+function migrate_mysql(PDO $pdo): void
+{
+    $have = array_map('strtolower', $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN));
+    $need = ['declarations', 'badges', 'lots', 'auth_codes', 'known_badges', 'known_reports', 'central_matches', 'settings', 'rate_limits'];
+    if (array_diff($need, $have)) {
+        $sql = (string) file_get_contents(APP_ROOT . '/bin/schema-mysql.sql');
+        $sql = preg_replace('/^\s*--.*$/m', '', $sql);
+        foreach (preg_split('/;\s*$/m', $sql) as $stmt) {
+            if (trim($stmt) !== '') {
+                $pdo->exec($stmt);
+            }
+        }
+    }
+    migrate_columns($pdo);
+}
+
+/** Colonnes d'une table, quel que soit le moteur */
+function table_columns(PDO $pdo, string $table): array
+{
+    if (db_driver() === 'mysql') {
+        return array_column($pdo->query("SHOW COLUMNS FROM `$table`")->fetchAll(), 'Field');
+    }
+    return array_column($pdo->query("PRAGMA table_info($table)")->fetchAll(), 'name');
+}
+
+/** Colonnes ajoutées au fil des versions : complétées sur les bases existantes */
+function migrate_columns(PDO $pdo): void
+{
+    $mysql = db_driver() === 'mysql';
+    $cols = table_columns($pdo, 'lots');
+    foreach (['owner_name' => 241, 'owner_login' => 20, 'owner_lastname' => 120, 'owner_firstname' => 120] as $c => $len) {
+        if (!in_array($c, $cols, true)) {
+            $pdo->exec("ALTER TABLE lots ADD COLUMN $c " . ($mysql ? "VARCHAR($len) NULL" : 'TEXT'));
+            if ($c === 'owner_firstname') { // bases existantes : découper les noms déjà importés
+                foreach ($pdo->query('SELECT numero, owner_name FROM lots WHERE owner_name IS NOT NULL')->fetchAll() as $r) {
+                    [$last, $first] = split_owner_name($r['owner_name']);
+                    $pdo->prepare('UPDATE lots SET owner_lastname = ?, owner_firstname = ? WHERE numero = ?')->execute([$last, $first, $r['numero']]);
+                }
+            }
+        }
+    }
+    $cols = table_columns($pdo, 'badges');
+    foreach (['from_central', 'parking'] as $c) {
+        if (!in_array($c, $cols, true)) {
+            $pdo->exec("ALTER TABLE badges ADD COLUMN $c " . ($mysql ? 'TINYINT(1)' : 'INTEGER') . ' NOT NULL DEFAULT 0');
+        }
+    }
 }
 
 function migrate(PDO $pdo): void
@@ -140,25 +217,7 @@ CREATE TABLE IF NOT EXISTS rate_limits (
     window_start INTEGER NOT NULL
 );
 SQL);
-    $cols = array_column($pdo->query('PRAGMA table_info(lots)')->fetchAll(), 'name');
-    foreach (['owner_name', 'owner_login', 'owner_lastname', 'owner_firstname'] as $c) {
-        if (!in_array($c, $cols, true)) {
-            $pdo->exec("ALTER TABLE lots ADD COLUMN $c TEXT");
-            if ($c === 'owner_firstname') { // bases existantes : découper les noms déjà importés
-                foreach ($pdo->query('SELECT numero, owner_name FROM lots WHERE owner_name IS NOT NULL')->fetchAll() as $r) {
-                    [$last, $first] = split_owner_name($r['owner_name']);
-                    $pdo->prepare('UPDATE lots SET owner_lastname = ?, owner_firstname = ? WHERE numero = ?')->execute([$last, $first, $r['numero']]);
-                }
-            }
-        }
-    }
-    $cols = array_column($pdo->query('PRAGMA table_info(badges)')->fetchAll(), 'name');
-    if (!in_array('from_central', $cols, true)) {
-        $pdo->exec('ALTER TABLE badges ADD COLUMN from_central INTEGER NOT NULL DEFAULT 0');
-    }
-    if (!in_array('parking', $cols, true)) {
-        $pdo->exec('ALTER TABLE badges ADD COLUMN parking INTEGER NOT NULL DEFAULT 0');
-    }
+    migrate_columns($pdo);
 }
 
 function now(): string
@@ -391,7 +450,7 @@ function load_declarations(string $where = '1=1', array $args = []): array
     foreach ($st->fetchAll() as $b) {
         $b['id'] = (int) $b['id'];
         $b['declaration_id'] = (int) $b['declaration_id'];
-        foreach (['stair_a', 'stair_b', 'stair_c', 'parking'] as $k) {
+        foreach (['stair_a', 'stair_b', 'stair_c', 'parking', 'from_central'] as $k) {
             $b[$k] = (bool) $b[$k];
         }
         $byDecl[$b['declaration_id']][] = $b;
@@ -533,7 +592,7 @@ function save_declaration(?int $declId, array $identity, array $badges, ?array $
             // Mettre de côté les numéros des badges conservés pour éviter les conflits d'unicité lors d'échanges
             foreach ($badges as $b) {
                 if ($b['id'] && isset($old[$b['id']])) {
-                    $pdo->prepare("UPDATE badges SET serial = '~' || id WHERE id = ?")->execute([$b['id']]);
+                    $pdo->prepare("UPDATE badges SET serial = " . (db_driver() === 'mysql' ? "CONCAT('~', id)" : "'~' || id") . " WHERE id = ?")->execute([$b['id']]);
                 }
             }
         } else {
@@ -562,7 +621,7 @@ function save_declaration(?int $declId, array $identity, array $badges, ?array $
         $pdo->commit();
     } catch (PDOException $e) {
         $pdo->rollBack();
-        if (str_contains($e->getMessage(), 'UNIQUE')) {
+        if ($e->getCode() === '23000' || str_contains($e->getMessage(), 'UNIQUE') || str_contains($e->getMessage(), 'Duplicate')) {
             throw new ValidationError(['badges' => 'Un des badges vient d’être déclaré par quelqu’un d’autre. Vérifiez les numéros.']);
         }
         throw $e;
@@ -674,7 +733,7 @@ function lot_record(?string $libelle, ?string $last, ?string $first, ?string $lo
 function lots_rows(): array
 {
     $rows = [];
-    foreach (db()->query('SELECT numero, libelle, owner_lastname, owner_firstname, owner_login FROM lots ORDER BY CAST(numero AS INTEGER)') as $r) {
+    foreach (db()->query('SELECT numero, libelle, owner_lastname, owner_firstname, owner_login FROM lots ORDER BY ' . sql_int('numero')) as $r) {
         $rows[] = ['numero' => str_pad($r['numero'], 4, '0', STR_PAD_LEFT), 'libelle' => $r['libelle'], 'nom' => $r['owner_lastname'], 'prenom' => $r['owner_firstname'], 'login' => $r['owner_login']];
     }
     return $rows;
@@ -963,7 +1022,7 @@ function central_decisions(): array
 function owners_index(): array
 {
     $owners = [];
-    foreach (db()->query('SELECT numero, libelle, owner_name, owner_login FROM lots WHERE owner_login IS NOT NULL ORDER BY CAST(numero AS INTEGER)') as $r) {
+    foreach (db()->query('SELECT numero, libelle, owner_name, owner_login FROM lots WHERE owner_login IS NOT NULL ORDER BY ' . sql_int('numero')) as $r) {
         $o = &$owners[$r['owner_login']];
         $o ??= ['login' => $r['owner_login'], 'name' => $r['owner_name'], 'lots' => [], 'tokens' => central_name_tokens($r['owner_name'])];
         $o['lots'][] = ['numero' => str_pad($r['numero'], 4, '0', STR_PAD_LEFT), 'libelle' => $r['libelle']];
@@ -1165,6 +1224,25 @@ function central_rows(): array
         }
     }
     return $rows;
+}
+
+/** Données de départ des pages (servies aussi par l'action « session » de l'API) */
+function session_payload(): array
+{
+    return [
+        'ok' => true,
+        'csrf' => $_SESSION['csrf'],
+        'residence' => config('residence_name'),
+        'contact' => config('contact_email'),
+        'lots' => db()->query('SELECT numero, libelle FROM lots ORDER BY ' . sql_int('numero'))->fetchAll(),
+        'strict_lots' => (bool) config('strict_lots'),
+        'ocr' => trim((string) config('anthropic_api_key')) !== '' ? 'server' : 'local',
+        'serial_min' => (int) config('serial_min_length'),
+        'serial_max' => (int) config('serial_max_length'),
+        'resident_email' => $_SESSION['resident_email'] ?? null,
+        'admin' => !empty($_SESSION['admin']),
+        'central' => central_loaded(),
+    ];
 }
 
 function h(?string $s): string
