@@ -11,7 +11,7 @@ return [
     'contact_email' => 'cs@copro26-36fontenay-vincennes.fr',
 
     // Mot de passe administrateur : hash généré avec  php bin/hash-password.php
-    'admin_password_hash' => '',
+    'admin_password_hash' => '$2y$12$Qq1vuc7tslzQ8RCvd07b9.YO1g7MM.qcDN1/qrv2MPyj/wzgwJhe2',
 
     // ---------- Base de données ----------
     // 'sqlite' : un simple fichier dans data/ (rien à créer chez l'hébergeur)
@@ -29,7 +29,7 @@ return [
         'port'     => 35441,
         'database' => 'badges',
         'username' => 'badges',
-        'password' => 'copro2636',
+        'password' => 'Copro2636',
     ],
 
     // Format de l'identifiant syndic (expression régulière, insensible à la casse)
@@ -58,11 +58,11 @@ return [
         'host'       => 'ssl0.ovh.net',
         'port'       => 465,          // 465 = SSL, 587 = STARTTLS
         'encryption' => 'ssl',        // 'ssl', 'tls' ou ''
-        'username'   => 'no-reply@exemple.fr',
-        'password'   => '',
+        'username'   => 'cs@copro26-36fontenay-vincennes.fr',
+        'password'   => 'cs2636rdf',
         'timeout'    => 15,
     ],
 
     // Mettre à false uniquement pour des tests en local sans HTTPS
-    'secure_cookies' => true,
+    'secure_cookies' => false,
 ];

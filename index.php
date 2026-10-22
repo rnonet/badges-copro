@@ -22,7 +22,7 @@ if (!is_dir(__DIR__ . '/public')) {
 $base = null;
 $docRoot = realpath((string) ($_SERVER['DOCUMENT_ROOT'] ?? ''));
 $here = realpath(__DIR__);
-if ($docRoot && $here && str_starts_with($here . '/', rtrim($docRoot, '/') . '/')) {
+if ($docRoot && $here && strpos($here . "/", rtrim($docRoot, "/") . "/") === 0) {
     $base = rtrim(str_replace('\\', '/', substr($here, strlen(rtrim($docRoot, '/')))), '/');
 }
 if ($base === null) {
@@ -32,7 +32,7 @@ if ($base === null) {
 
 // Chemin demandé après le dossier d'installation (ex. « admin », « admin/ »)
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-if ($base !== '' && str_starts_with($path, $base)) {
+if ($base !== '' && strpos($path, $base) === 0) {
     $path = substr($path, strlen($base));
 }
 $path = ltrim($path, '/');
@@ -42,7 +42,7 @@ if ($path === 'index.php') {
 
 // Seules les pages de l'application sont suivies ; tout le reste renvoie à l'accueil
 // (jamais src/, data/, bin/ ni config.php, qui ne doivent pas être servis)
-$allowed = ['', 'admin', 'admin/'];
+$allowed = ['', 'admin', 'admin/', 'diagnostic.php'];
 $target = in_array($path, $allowed, true) ? $path : '';
 if ($target === 'admin') {
     $target = 'admin/';

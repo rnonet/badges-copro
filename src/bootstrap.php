@@ -5,6 +5,12 @@ const APP_ROOT = __DIR__ . '/..';
 
 date_default_timezone_set('Europe/Paris'); // dates des exports et des emails à l'heure de Paris
 
+// Erreurs PHP consignées dans data/app.log (lisible par FTP, jamais servi sur le web)
+if (is_dir(APP_ROOT . '/data') && is_writable(APP_ROOT . '/data')) {
+    ini_set('log_errors', '1');
+    ini_set('error_log', APP_ROOT . '/data/app.log');
+}
+
 function config(?string $key = null)
 {
     static $cfg = null;

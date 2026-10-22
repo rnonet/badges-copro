@@ -29,6 +29,14 @@ PHP 8.1+ et SQLite, sans framework ni étape de compilation.
 6. Faire un essai complet : déclaration, demande de code sur votre propre email, modification, export CSV.
 7. Diffuser le lien de la page aux résidents (affichage dans le hall avec QR code, email du syndic…).
 
+## Mise en route et dépannage
+
+Une fois les fichiers en ligne, ouvrez **`https://votre-site/diagnostic.php`**. La page vérifie la version de PHP (8.1 minimum), les extensions, `config.php`, le dossier `data/`, la connexion à la base, HTTPS, l'API et la configuration des emails. Un voyant rouge indique ce qui bloque, avec la marche à suivre. Saisissez le mot de passe administrateur pour voir le message d'erreur technique exact et envoyer un email de test. Sans mot de passe, la page n'affiche aucun détail ; elle peut donc rester en ligne.
+
+Le message « Le service est momentanément indisponible » sur la page des résidents signifie que l'application n'arrive pas à joindre sa base : la page de diagnostic en donne la raison. Les erreurs PHP sont aussi consignées dans `data/app.log` (lisible par FTP).
+
+**OVH** : le fichier `.ovhconfig` fourni (à déposer à la racine de l'hébergement) demande PHP 8.3. Sans lui, un ancien hébergement peut rester sur une version trop ancienne.
+
 ## Utilisation
 
 | Page | Adresse | Pour qui |

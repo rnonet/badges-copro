@@ -783,5 +783,9 @@
     const r = await App.loadSession().catch(() => ({ ok: false }));
     if (r.residence) $('residence-name').textContent = r.residence;
     if (r.admin) { await refresh(); show('dash'); loadCentralCount(); } else show('login');
+    if (!r.ok) { // serveur mal configuré : orienter vers la page de diagnostic
+      $('login-error').innerHTML = 'Le serveur ne répond pas correctement (base de données ou configuration). Ouvrez <a href="../diagnostic.php">la page de diagnostic</a> pour voir ce qui bloque.';
+      $('login-error').hidden = false;
+    }
   })();
 })();

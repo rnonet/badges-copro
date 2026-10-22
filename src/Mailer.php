@@ -6,6 +6,9 @@ declare(strict_types=1);
  */
 final class Mailer
 {
+    /** Dernière erreur d'envoi (affichée par la page de diagnostic) */
+    public static string $lastError = '';
+
     public static function send(string $to, string $subject, string $body): bool
     {
         $transport = config('mail_transport') ?: 'smtp';
@@ -38,6 +41,7 @@ final class Mailer
             self::smtp($to, $encSubject, $body, $headers);
             return true;
         } catch (Throwable $e) {
+            self::$lastError = $e->getMessage();
             error_log('SMTP: ' . $e->getMessage());
             return false;
         }
